@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Пульт звонков</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📞</text></svg>">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Пульт звонков">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+:root{
+  --bg:#0d1117;--panel:#151b23;--p2:#1c2530;--line:#2a3441;
+  --text:#dbe4ee;--muted:#7c8a9a;
+  --red:#ff3b3b;--rdim:#3a1414;
+  --green:#33d17a;--gdim:#123320;
+  --amber:#f5a623;--adim:#2e2005;
+  --accent:#3aa0ff;
+  --mono:'Consolas','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:radial-gradient(circle at 50% 0%,#16202c,#0a0e13 70%);color:var(--text);font-family:'Segoe UI',Tahoma,Arial,sans-serif;min-height:100vh;}
+header{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131a23,#0e141b);flex-wrap:wrap;gap:10px;}
+.hl{display:flex;align-items:center;gap:14px;}
+.htitle{font-size:15px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;color:#fff;}
+.spill{display:flex;align-items:center;gap:6px;background:var(--p2);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:12px;font-family:var(--mono);}
+.sdot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;}
+.sdot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
+.sdot.warn{background:var(--amber);box-shadow:0 0 6px var(--amber);}
+.hr{display:flex;align-items:center;gap:9px;}
+#clock{font-family:var(--mono);font-size:13px;color:var(--accent);}
+.gtog{display:flex;align-items:center;gap:8px;background:var(--p2);border:1px solid var(--line);border-radius:8px;padding:6px 13px;cursor:pointer;user-select:none;}
+.tt{width:36px;height:20px;border-radius:12px;background:#2a3441;position:relative;transition:.15s;flex-shrink:0;}
+.tt.on{background:var(--gdim);border:1px solid var(--green);}
+.tt::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#8a9aaa;top:3px;left:3px;transition:.15s;}
+.tt.on::after{left:19px;background:var(--green);}
+.gtlbl{font-size:12px;color:var(--muted);}
+.hbtn{background:var(--p2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 13px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.hbtn:hover{border-color:var(--accent);color:var(--accent);}
+main{padding:22px;max-width:1100px;margin:0 auto;}
+#pb{display:none;position:fixed;inset:0;background:rgba(5,8,12,.92);z-index:100;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px;}
+#pb.show{display:flex;}
+#pb-inner{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 24px;max-width:320px;color:var(--text);}
+#grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px;cursor:pointer;transition:border-color .15s;}
+.card:hover{border-color:#3a4757;}
+.card.ringing{border-color:var(--red);animation:rp 1s infinite;}
+@keyframes rp{0%{box-shadow:0 0 0 0 rgba(255,59,59,.5);}70%{box-shadow:0 0 0 14px rgba(255,59,59,0);}100%{box-shadow:0 0 0 0 rgba(255,59,59,0);}}
+.ctop{display:flex;align-items:flex-start;justify-content:space-between;}
+.phi{width:30px;height:30px;color:var(--muted);transition:.15s;flex-shrink:0;}
+.card.ringing .phi{color:var(--red);}
+.card.nosample .phi{color:var(--amber);}
+.lamp{width:16px;height:16px;border-radius:50%;background:#1e2730;border:1px solid #000;transition:.2s;flex-shrink:0;}
+.lamp.g{background:var(--green);box-shadow:0 0 9px 2px var(--green);}
+.lamp.r{background:var(--red);box-shadow:0 0 11px 3px var(--red);}
+.lamp.a{background:var(--amber);box-shadow:0 0 7px 2px var(--amber);}
+.cname{font-size:16px;font-weight:600;margin-top:11px;color:#fff;}
+.badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:9px;padding:1px 6px;margin-left:7px;vertical-align:middle;}
+.csub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;text-transform:uppercase;letter-spacing:.4px;min-height:16px;}
+.cfoot{display:flex;align-items:center;justify-content:space-between;margin-top:13px;padding-top:11px;border-top:1px solid var(--line);}
+.ltog{width:32px;height:17px;border-radius:9px;background:#1e2730;position:relative;cursor:pointer;flex-shrink:0;}
+.ltog.on{background:var(--gdim);}
+.ltog::after{content:'';position:absolute;width:11px;height:11px;border-radius:50%;background:#7a8a9a;top:3px;left:3px;transition:.15s;}
+.ltog.on::after{left:18px;background:var(--green);}
+.ltoglbl{font-size:11px;color:var(--muted);}
+.overlay{display:none;position:fixed;inset:0;background:rgba(5,8,12,.78);align-items:center;justify-content:center;z-index:50;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:22px;}
+.modal.wide{max-width:860px;}
+.mhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.mhd h2{font-size:16px;color:#fff;}
+.mc{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;}
+.mc:hover{color:#fff;}
+.hrow{display:flex;gap:12px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px;}
+.hrow:last-child{border-bottom:none;}
+.hts{font-family:var(--mono);color:var(--muted);white-space:nowrap;font-size:12px;}
+.hch{color:var(--accent);font-size:13px;}
+.hemp{color:var(--muted);font-size:13px;padding:22px 0;text-align:center;}
+.ss{margin-bottom:20px;padding-bottom:17px;border-bottom:1px solid var(--line);}
+.ss:last-child{border-bottom:none;margin-bottom:0;}
+.ss h3{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);margin-bottom:11px;}
+.ls{background:var(--p2);border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px;}
+.sr{display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap;}
+.sr:last-child{margin-bottom:0;}
+.sr label{font-size:12px;color:var(--muted);min-width:80px;flex-shrink:0;}
+input[type=text],select{background:#0e141b;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px;flex:1;min-width:100px;}
+input[type=range]{flex:1;accent-color:var(--accent);min-width:80px;}
+.btn{background:var(--p2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.prim{background:var(--accent);color:#06121e;border-color:var(--accent);font-weight:600;}
+.btn.bi{background:var(--gdim);border-color:var(--green);color:var(--green);font-size:11px;padding:4px 9px;}
+.btn.bi.sel{background:var(--green);color:#000;font-weight:700;}
+.btn.bi:hover{background:var(--green);color:#000;}
+.pok{font-size:11px;color:var(--green);font-family:var(--mono);}
+.pno{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.perr{font-size:11px;color:var(--red);font-family:var(--mono);}
+.pbi{font-size:11px;color:var(--accent);font-family:var(--mono);}
+.mw{background:#0e141b;border:1px solid var(--line);border-radius:4px;height:12px;overflow:hidden;flex:1;}
+.mb{height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));transition:width .05s;}
+.note{font-size:11px;color:var(--muted);line-height:1.6;}
+.mft{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--gdim);border:1px solid var(--green);color:var(--green);padding:8px 18px;border-radius:8px;font-size:13px;display:none;z-index:90;}
+.toast.e{background:var(--rdim);border-color:var(--red);color:var(--red);}
+.score-bar{display:flex;gap:4px;margin-top:6px;height:4px;}
+.score-seg{height:4px;border-radius:2px;background:var(--line);flex:1;transition:background .1s;}
+.score-seg.hit{background:var(--green);}
+.score-seg.near{background:var(--amber);}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 600px) {
+  header { padding: 10px 14px; gap: 8px; }
+  .htitle { font-size: 13px; letter-spacing: .8px; }
+  .spill { display: none; }
+  #clock { font-size: 12px; }
+  .gtlbl { display: none; }
+  .hbtn { padding: 6px 10px; font-size: 12px; }
+  main { padding: 14px; }
+  #grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { padding: 13px; border-radius: 12px; }
+  .cname { font-size: 14px; margin-top: 8px; }
+  .csub { font-size: 10px; }
+  .cfoot { margin-top: 10px; padding-top: 9px; }
+  .modal { padding: 16px; max-height: 92vh; }
+  .modal.wide { max-width: 100%; }
+  .ls { padding: 11px; }
+  .sr { gap: 7px; }
+  .sr label { min-width: 65px; font-size: 11px; }
+  .hrow { padding: 7px 8px; }
+  .btn.bi { font-size: 10px; padding: 3px 7px; }
+}
+@media (max-width: 380px) {
+  #grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .card { padding: 10px; }
+  .phi { width: 24px; height: 24px; }
+  .cname { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hl">
+    <div class="htitle">Пульт звонков</div>
+    <div class="spill"><div class="sdot" id="sDot"></div><span id="sTxt">инициализация…</span></div>
+  </div>
+  <div class="hr">
+    <div id="clock">--:--:--</div>
+    <div class="gtog" id="gTog"><div class="tt on" id="gTT"></div><span class="gtlbl" id="gLbl">Мониторинг вкл</span></div>
+    <button class="hbtn" id="btnHist">📋 История</button>
+    <button class="hbtn" id="btnSet">⚙</button>
+  </div>
+</header>
+<main>
+  <div id="pb">
+    <div id="pb-inner">
+      <div style="font-size:32px;margin-bottom:10px;">🎙️</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Нужен доступ к микрофону</div>
+      <div style="font-size:13px;opacity:.8;margin-bottom:16px;">Приложение слушает звонки через микрофон телефона</div>
+      <button onclick="retryMic()" style="background:var(--accent);color:#06121e;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;">Разрешить микрофон</button>
+    </div>
+  </div>
+  <div id="grid"></div>
+</main>
+
+<!-- history modal -->
+<div class="overlay" id="hOvl">
+  <div class="modal">
+    <div class="mhd"><h2 id="hTitle">История</h2><button class="mc" id="hClose">×</button></div>
+    <div id="hBody"></div>
+  </div>
+</div>
+
+<!-- settings modal -->
+<div class="overlay" id="sOvl">
+  <div class="modal wide">
+    <div class="mhd"><h2>Настройки</h2><button class="mc" id="sClose">×</button></div>
+    <div class="ss">
+      <h3>Линии</h3>
+      <div id="lsWrap"></div>
+    </div>
+    <div class="ss">
+      <h3>Источник звука</h3>
+      <div class="sr"><label>Микрофон</label><select id="devSel"></select><button class="btn" id="btnDevR">↺</button></div>
+      <div class="sr"><label>Уровень</label><div class="mw"><div class="mb" id="mBar"></div></div></div>
+      <p class="note" style="margin-top:6px;">Программа работает офлайн. Звук не записывается — анализируется в реальном времени.</p>
+    </div>
+    <div class="ss">
+      <h3>Метод обнаружения</h3>
+      <p class="note">
+        <b>Встроенные образцы (AT1, MSH, GDU)</b> используют узкополосные энергетические детекторы по конкретным частотам, определённым из анализа ваших записей:<br>
+        • <b>AT1</b>: энергия в 870–1010 Гц (F₀=938 Гц) и/или 2730–2900 Гц (3-я гармоника 2824 Гц)<br>
+        • <b>MSH</b>: энергия в 1280–1400 Гц (F₀=1336 Гц), без пересечения с AT1 и GDU<br>
+        • <b>GDU</b>: энергия в 1120–1240 Гц (F₀=1172 Гц) + 2-я гармоника 2290–2420 Гц (2349 Гц)<br><br>
+        <b>Пользовательский образец (Линия 4)</b> использует косинусное сходство по мел-спектру.<br><br>
+        Ползунок «Строгость» регулирует минимальный порог (0=мягкий, 1=строгий). Кулдаун: 40 с независимо по каждой линии.
+      </p>
+    </div>
+    <div class="mft"><button class="btn prim" id="btnSave">Сохранить и закрыть</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── CONSTANTS ── */
+const SK='phoneMonV5', IDB_N='phoneMonAudio5', IDB_S='smp';
+const NL=4, FFT=2048, WIN=25, NEED=13, EGATE=-52, CD=40000, FMS=40;
+const WEEK=7*24*60*60*1000;
+
+/* ── BUILT-IN PHONE PROFILES (from spectral analysis of your recordings) ── */
+// AT1: F0=938Hz, 3rd harmonic=2824Hz dominant; melody with AM pattern
+// MSH: F0=1336Hz, 2nd harmonic=2666Hz
+// GDU: F0=1172Hz, 2nd harmonic=2349Hz (very strong)
+const BUILTIN = {
+  AT1: {
+    label: 'AT1 (встроен)',
+    // VERIFIED from recording analysis:
+    // AT1 F0=938Hz (mean ratio 0.320 in narrow 920-965Hz band)
+    // AT1 3rd harmonic=2824Hz (mean ratio 0.153)
+    // MSH at 920-965Hz: 0.005 | GDU at 920-965Hz: 0.005 → clean separation
+    detect: (f, sr, n) => {
+      const at1n = bandRatio(f,sr,n, 920, 965);  // F0 narrow: AT1=0.32 MSH=0.005 GDU=0.005
+      const at1h = bandRatio(f,sr,n,2790,2860);  // 3rd harmonic: AT1=0.15 MSH=0 GDU=0.002
+      const msh  = bandRatio(f,sr,n,1295,1375);  // exclude MSH contamination
+      const gdu  = bandRatio(f,sr,n,1140,1210);  // exclude GDU contamination
+      if (msh > 0.20 || gdu > 0.10) return 0;
+      return Math.min(1, Math.max(at1n/0.14, at1h/0.05));
+    },
+    defaultThreshold: 0.50,
+  },
+  MSH: {
+    label: 'MSH (встроен)',
+    // MSH F0=1336Hz (mean ratio 0.462 in 1295-1375Hz)
+    // AT1 at 1295-1375Hz: 0.020 | GDU at 1295-1375Hz: 0.146 → use exclusion
+    detect: (f, sr, n) => {
+      const msh  = bandRatio(f,sr,n,1295,1375);  // F0: MSH=0.46 AT1=0.02 GDU=0.15
+      const at1n = bandRatio(f,sr,n, 920, 965);  // exclude AT1
+      const gdu  = bandRatio(f,sr,n,1140,1210);  // exclude GDU (has energy at 1172Hz)
+      if (at1n > 0.12 || gdu > 0.10) return 0;
+      return Math.min(1, msh / 0.25);
+    },
+    defaultThreshold: 0.45,
+  },
+  GDU: {
+    label: 'GDU (встроен)',
+    // GDU F0=1172Hz (mean ratio 0.338 in 1140-1210Hz) + 2nd harmonic 2349Hz (0.114)
+    // Dual-band confirmation eliminates all false positives
+    detect: (f, sr, n) => {
+      const gdu  = bandRatio(f,sr,n,1140,1210);  // F0: GDU=0.34 AT1=0.0004 MSH=0.013
+      const gdu2 = bandRatio(f,sr,n,2290,2420);  // 2nd harmonic: GDU=0.11 AT1=0 MSH=0.021
+      const at1n = bandRatio(f,sr,n, 920, 965);  // exclude AT1
+      if (at1n > 0.10) return 0;
+      if (gdu < 0.05 || gdu2 < 0.012) return 0; // both bands required
+      return Math.min(1, (gdu/0.20 + gdu2/0.06) / 2);
+    },
+    defaultThreshold: 0.48,
+  },
+  A2: {
+    label: 'A2 (встроен)',
+    // A-2: F0=1787Hz dominant, secondary=2455Hz
+    // Band 1750-1830Hz: A2=0.447 AT1=0.001 MSH=0.008 GDU=0.084
+    // Band 2380-2480Hz: A2=0.279 AT1=0 MSH=0.003 GDU=0.007 (38x separation!)
+    detect: (f, sr, n) => {
+      const a2   = bandRatio(f,sr,n,1750,1830);  // F0: A2=0.45 others<0.09
+      const a2h  = bandRatio(f,sr,n,2380,2480);  // 2nd comp: A2=0.28 others<0.008
+      const at1n = bandRatio(f,sr,n, 920, 965);  // exclude AT1
+      const msh  = bandRatio(f,sr,n,1295,1375);  // exclude MSH
+      if (at1n > 0.05 || msh > 0.15) return 0;
+      if (a2 < 0.10) return 0;
+      // Primary band alone is sufficient; harmonic confirms
+      return Math.min(1, (a2/0.30 + a2h/0.15) / 2);
+    },
+    defaultThreshold: 0.48,
+  },
+};
+const BUILTIN_KEYS = Object.keys(BUILTIN);
+
+/* ── BAND ENERGY UTILITY ── */
+// Returns energy ratio in [loHz, hiHz] relative to [300, 5000Hz]
+// Works directly with Float32Array from analyser.getFloatFrequencyData (dB values)
+function bandRatio(freqDB, sr, binCount, loHz, hiHz) {
+  const lo = hz2bin(loHz, sr, binCount);
+  const hi = hz2bin(hiHz, sr, binCount);
+  const lT = hz2bin(300, sr, binCount);
+  const hT = hz2bin(5000, sr, binCount);
+  let eBand=0, eTotal=0;
+  for (let i=lT; i<=hT && i<binCount; i++) {
+    const v = Math.pow(10, freqDB[i]/20);
+    const p = v*v;
+    eTotal += p;
+    if (i>=lo && i<=hi) eBand += p;
+  }
+  return eTotal > 1e-14 ? eBand/eTotal : 0;
+}
+
+function hz2bin(hz, sr, binCount) {
+  return Math.min(binCount-1, Math.round(hz*binCount/(sr/2)));
+}
+
+/* ── STATE ── */
+function defLine(i) {
+  const key = BUILTIN_KEYS[i] || null;
+  return {
+    id: i,
+    name: key ? BUILTIN[key].label.replace(' (встроен)','') : 'Линия '+(i+1),
+    enabled: true,
+    threshold: key ? BUILTIN[key].defaultThreshold : 0.72,
+    sampleSource: key ? 'builtin' : null,
+    builtinKey: key,
+    sampleName: key ? BUILTIN[key].label : null,
+    history: [],
+    lastViewedTs: 0,
+  };
+}
+function defState() { return {lines:Array.from({length:NL},(_,i)=>defLine(i)),deviceId:null,globalEnabled:true}; }
+
+let S = loadState();
+let gOn = S.globalEnabled !== false;
+S.lines.forEach(l=>{ l.profile=null; l.sampleURL=null; });
+
+function pruneHist(){const c=Date.now()-WEEK;S.lines.forEach(l=>{l.history=l.history.filter(h=>h.ts>c);});}
+
+function loadState(){
+  try{
+    const r=localStorage.getItem(SK); if(!r) return defState();
+    const p=JSON.parse(r);
+    if(!p.lines||p.lines.length!==NL) return defState();
+    p.lines.forEach(l=>{
+      if(!l.history) l.history=[];
+      if(l.threshold==null) l.threshold=0.6;
+      l.profile=null; l.sampleURL=null;
+    });
+    return p;
+  }catch(e){return defState();}
+}
+
+function saveState(){
+  pruneHist();
+  const s={deviceId:S.deviceId,globalEnabled:gOn,lines:S.lines.map(l=>({
+    id:l.id,name:l.name,enabled:l.enabled,threshold:l.threshold,
+    sampleName:l.sampleName,sampleSource:l.sampleSource,builtinKey:l.builtinKey,
+    history:l.history,lastViewedTs:l.lastViewedTs
+  }))};
+  try{localStorage.setItem(SK,JSON.stringify(s));return true;}
+  catch(e){toast('Ошибка сохранения: '+e.message,true);return false;}
+}
+
+/* ── IDB for custom audio samples ── */
+function idbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open(IDB_N,1);r.onupgradeneeded=()=>r.result.createObjectStore(IDB_S);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function idbPut(id,blob){const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction(IDB_S,'readwrite');tx.objectStore(IDB_S).put(blob,id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
+async function idbGet(id){const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction(IDB_S,'readonly');const r=tx.objectStore(IDB_S).get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});}
+
+/* ── COSINE PROFILE (for custom uploaded audio) ── */
+// Uses bin-edge-based bands — IDENTICAL to live detection pipeline
+const NB=64, LO=150, HI=7000;
+const MEL_HZ=(()=>{const e=[];for(let i=0;i<=NB;i++)e.push(LO*Math.pow(HI/LO,i/NB));return e;})();
+
+function mkBinEdges(binCount,sr){
+  return MEL_HZ.map(f=>Math.min(binCount-1,Math.round(f*binCount/(sr/2))));
+}
+function bandFromBins(arr,be){
+  const o=new Float32Array(NB);
+  for(let b=0;b<NB;b++){
+    const lo=be[b],hi=Math.max(be[b+1],lo+1);
+    let s=0,c=0;
+    for(let i=lo;i<hi&&i<arr.length;i++){s+=arr[i];c++;}
+    o[b]=c?s/c:0;
+  }
+  return o;
+}
+function lc(v){const o=new Float32Array(v.length);for(let i=0;i<v.length;i++)o[i]=Math.log10(1+v[i]*80);return o;}
+function normV(v){let n=0;for(let i=0;i<v.length;i++)n+=v[i]*v[i];n=Math.sqrt(n)||1;const o=new Float32Array(v.length);for(let i=0;i<v.length;i++)o[i]=v[i]/n;return o;}
+function cosSim(a,b){let d=0;for(let i=0;i<a.length;i++)d+=a[i]*b[i];return d;}
+function hannWin(n){return Float32Array.from({length:n},(_,i)=>0.5-0.5*Math.cos(2*Math.PI*i/(n-1)));}
+function doFFT(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){[re[i],re[j]]=[re[j],re[i]];[im[i],im[j]]=[im[j],im[i]];}}
+  for(let l=2;l<=n;l<<=1){const a=-2*Math.PI/l,wr=Math.cos(a),wi=Math.sin(a);for(let i=0;i<n;i+=l){let cr=1,ci=0;for(let k=0;k<l/2;k++){const ur=re[i+k],ui=im[i+k],vr=re[i+k+l/2]*cr-im[i+k+l/2]*ci,vi=re[i+k+l/2]*ci+im[i+k+l/2]*cr;re[i+k]=ur+vr;im[i+k]=ui+vi;re[i+k+l/2]=ur-vr;im[i+k+l/2]=ui-vi;const nr=cr*wr-ci*wi,ni=cr*wi+ci*wr;cr=nr;ci=ni;}}}
+}
+
+async function buildCustomProfile(line, blob){
+  line.profile=null;
+  if(!blob) return;
+  try{
+    const ab=await blob.arrayBuffer();
+    const tmp=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,1,44100);
+    const dec=await tmp.decodeAudioData(ab.slice(0));
+    const sr=dec.sampleRate, ch=dec.getChannelData(0);
+    const hop=FFT/2;
+    const be=mkBinEdges(FFT/2, sr);
+    const hw=hannWin(FFT);
+    const templates=[];
+    for(let s=0;s+FFT<=ch.length;s+=hop){
+      const fr=ch.subarray(s,s+FFT);
+      let rms=0; for(let k=0;k<fr.length;k++) rms+=fr[k]*fr[k];
+      if(Math.sqrt(rms/fr.length)<0.003) continue;
+      // magnitude spectrum (linear)
+      const re=new Float32Array(FFT); for(let k=0;k<FFT;k++) re[k]=fr[k]*hw[k];
+      const im=new Float32Array(FFT); doFFT(re,im);
+      const mag=new Float32Array(FFT/2); for(let k=0;k<FFT/2;k++) mag[k]=Math.sqrt(re[k]*re[k]+im[k]*im[k]);
+      templates.push(normV(lc(bandFromBins(mag,be))));
+    }
+    if(templates.length<3){return;}
+    // Representative templates: sample uniformly
+    const step=Math.max(1,Math.floor(templates.length/20));
+    const tpls=Array.from({length:Math.min(20,templates.length)},(_,i)=>templates[i*step]);
+    const mean=new Float32Array(NB);
+    tpls.forEach(t=>{for(let i=0;i<NB;i++) mean[i]+=t[i]/tpls.length;});
+    line.profile={mean:normV(mean), templates:tpls};
+  }catch(e){console.error('buildCustomProfile',e);}
+}
+
+/* ── AUDIO ENGINE ── */
+let actx=null,anl=null,src=null,mst=null,mon=false,fdb=null;
+let liveSr=44100, liveBinCount=1024;
+
+// Per-line: independent sliding windows and cooldowns
+const wins = Array.from({length:NL}, ()=>[]);
+const lastTrig = new Array(NL).fill(0);  // INDEPENDENT per-line cooldown
+
+function retryMic(){
+  document.getElementById('pb').classList.remove('show');
+  startMon();
+}
+
+async function startMon(){
+  if(mon) return;
+  try{
+    const c={audio:S.deviceId
+      ?{deviceId:{exact:S.deviceId},noiseSuppression:false,echoCancellation:false,autoGainControl:false}
+      :{noiseSuppression:false,echoCancellation:false,autoGainControl:false}};
+    mst=await navigator.mediaDevices.getUserMedia(c);
+    document.getElementById('pb').classList.remove('show');
+    actx=new(window.AudioContext||window.webkitAudioContext)();
+    src=actx.createMediaStreamSource(mst);
+    anl=actx.createAnalyser(); anl.fftSize=FFT; anl.smoothingTimeConstant=0.05;
+    src.connect(anl);
+    fdb=new Float32Array(anl.frequencyBinCount);
+    liveSr=actx.sampleRate; liveBinCount=anl.frequencyBinCount;
+    mon=true;
+    setSt('on','мониторинг активен');
+    schedLoop();
+  }catch(e){
+    document.getElementById('pb').classList.add('show');
+    setSt('warn','нет доступа к микрофону');
+    console.error(e);
+  }
+}
+
+let _lt=0;
+function schedLoop(){
+  if(!mon) return;
+  const n=performance.now();
+  if(n-_lt>=FMS){_lt=n;frameAnalyse();}
+  requestAnimationFrame(schedLoop);
+}
+
+// Live mel-band vector for custom profile matching (uses same pipeline as profile build)
+let _liveBe=null;
+function getLiveMelVec(){
+  if(!_liveBe) _liveBe=mkBinEdges(liveBinCount, liveSr);
+  // fdb has dB values → convert to linear magnitude
+  const lin=new Float32Array(liveBinCount);
+  for(let i=0;i<liveBinCount;i++) lin[i]=Math.pow(10,fdb[i]/20);
+  return normV(lc(bandFromBins(lin,_liveBe)));
+}
+
+function frameAnalyse(){
+  if(!anl) return;
+  anl.getFloatFrequencyData(fdb);
+
+  // Meter
+  let pk=-Infinity; for(let i=0;i<fdb.length;i++) if(fdb[i]>pk) pk=fdb[i];
+  document.getElementById('mBar').style.width=Math.max(0,Math.min(100,(pk+90)/90*100))+'%';
+
+  const now=Date.now();
+  const quiet=pk<EGATE;
+
+  for(let idx=0;idx<NL;idx++){
+    const line=S.lines[idx];
+    const win=wins[idx];
+    let score=0;
+
+    if(!quiet && line.enabled && gOn){
+      if(line.sampleSource==='builtin' && line.builtinKey && BUILTIN[line.builtinKey]){
+        // Feature-based detector for built-in sounds
+        score=BUILTIN[line.builtinKey].detect(fdb, liveSr, liveBinCount);
+      } else if(line.profile){
+        // Cosine similarity for custom uploaded audio
+        const lv=getLiveMelVec();
+        let mx=0;
+        for(const t of line.profile.templates){const s=cosSim(lv,t);if(s>mx)mx=s;}
+        const ms=cosSim(lv,line.profile.mean);
+        score=0.6*ms+0.4*mx;
+      }
+    }
+
+    const matched = score >= line.threshold;
+    win.push(matched ? score : 0);
+    if(win.length>WIN) win.shift();
+
+    if(!line.enabled || !gOn) continue;
+    if(!(line.sampleSource==='builtin'&&line.builtinKey) && !line.profile) continue;
+    if(win.length<WIN) continue;
+
+    const matchCount=win.filter(v=>v>=line.threshold).length;
+    const now2=Date.now();
+    // Each line has its own completely independent cooldown
+    if(matchCount>=NEED && (now2-lastTrig[idx])>CD){
+      lastTrig[idx]=now2;
+      wins[idx]=[];
+      registerCall(idx, now2);
+    }
+  }
+}
+
+function registerCall(idx, ts){
+  S.lines[idx].history.unshift({ts});
+  if(S.lines[idx].history.length>500) S.lines[idx].history.length=500;
+  saveState();
+  renderGrid();
+}
+
+/* ── UI HELPERS ── */
+const PHSVG=`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" class="phi"><path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8z"/></svg>`;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmtTs(ts){const d=new Date(ts),p=n=>String(n).padStart(2,'0');return`${p(d.getDate())}.${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+function setSt(cls,txt){const d=document.getElementById('sDot');d.className='sdot'+(cls?' '+cls:'');document.getElementById('sTxt').textContent=txt;}
+function toast(msg,e){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(e?' e':'');t.style.display='block';setTimeout(()=>t.style.display='none',2400);}
+
+/* ── RENDER GRID ── */
+function renderGrid(){
+  const g=document.getElementById('grid'); g.innerHTML='';
+  S.lines.forEach(line=>{
+    const unread=line.history.filter(h=>h.ts>line.lastViewedTs).length;
+    const hasDetector=(line.sampleSource==='builtin'&&line.builtinKey) || !!line.profile;
+    let lc='',cc='card',sub='';
+    if(!line.enabled||!gOn){lc='';sub='мониторинг выключен';}
+    else if(!hasDetector){lc='a';cc='card nosample';sub='нет образца';}
+    else if(unread>0){lc='r';cc='card ringing';sub='звонок!';}
+    else{lc='g';sub='';}
+    const d=document.createElement('div'); d.className=cc;
+    d.innerHTML=`
+      <div class="ctop">${PHSVG}<div class="lamp ${lc}"></div></div>
+      <div class="cname">${esc(line.name)}${unread?`<span class="badge">${unread}</span>`:''}</div>
+      <div class="csub">${sub}</div>
+      <div class="cfoot"><span class="ltoglbl">Линия</span><div class="ltog ${line.enabled?'on':''}" data-id="${line.id}"></div></div>`;
+    d.querySelector('.ltog').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.lines[line.id].enabled=!S.lines[line.id].enabled;
+      wins[line.id]=[];
+      saveState(); renderGrid();
+    });
+    d.addEventListener('click',e=>{if(!e.target.classList.contains('ltog')) openChHist(line.id);});
+    g.appendChild(d);
+  });
+}
+
+/* ── HISTORY ── */
+function openGlobalHist(){
+  document.getElementById('hTitle').textContent='История — 7 дней';
+  const cut=Date.now()-WEEK;
+  const all=[];
+  S.lines.forEach(l=>l.history.filter(h=>h.ts>cut).forEach(h=>all.push({ts:h.ts,name:l.name})));
+  all.sort((a,b)=>b.ts-a.ts);
+  document.getElementById('hBody').innerHTML=all.length
+    ?all.map(e=>`<div class="hrow"><span class="hts">${fmtTs(e.ts)}</span><span class="hch">${esc(e.name)}</span></div>`).join('')
+    :'<div class="hemp">За 7 дней звонков нет</div>';
+  document.getElementById('hOvl').classList.add('show');
+}
+function openChHist(idx){
+  const l=S.lines[idx];
+  document.getElementById('hTitle').textContent=esc(l.name)+' — новые';
+  const fresh=l.history.filter(h=>h.ts>l.lastViewedTs);
+  document.getElementById('hBody').innerHTML=fresh.length
+    ?fresh.map(h=>`<div class="hrow"><span class="hts">${fmtTs(h.ts)}</span></div>`).join('')
+    :'<div class="hemp">Нет новых звонков</div>';
+  l.lastViewedTs=Date.now(); saveState(); renderGrid();
+  document.getElementById('hOvl').classList.add('show');
+}
+document.getElementById('btnHist').onclick=openGlobalHist;
+document.getElementById('hClose').onclick=()=>document.getElementById('hOvl').classList.remove('show');
+document.getElementById('hOvl').addEventListener('click',e=>{if(e.target.id==='hOvl')e.currentTarget.classList.remove('show');});
+
+/* ── GLOBAL TOGGLE ── */
+document.getElementById('gTog').addEventListener('click',()=>{
+  gOn=!gOn; S.globalEnabled=gOn;
+  document.getElementById('gTT').className='tt'+(gOn?' on':'');
+  document.getElementById('gLbl').textContent=gOn?'Мониторинг вкл':'Мониторинг выкл';
+  if(gOn) for(let i=0;i<NL;i++) wins[i]=[];
+  saveState(); renderGrid();
+});
+
+/* ── SETTINGS ── */
+document.getElementById('btnSet').onclick=()=>{renderLS();populateDev();document.getElementById('sOvl').classList.add('show');};
+document.getElementById('sClose').onclick=()=>document.getElementById('sOvl').classList.remove('show');
+document.getElementById('sOvl').addEventListener('click',e=>{if(e.target.id==='sOvl')e.currentTarget.classList.remove('show');});
+document.getElementById('btnSave').onclick=()=>{if(saveState()){document.getElementById('sOvl').classList.remove('show');toast('Сохранено');}};
+
+function renderLS(){
+  const w=document.getElementById('lsWrap'); w.innerHTML='';
+  S.lines.forEach(line=>{
+    const isBi=line.sampleSource==='builtin';
+    const hasCus=line.sampleSource==='upload'&&!!line.profile;
+    const statusCls=isBi?'pbi':hasCus?'pok':'pno';
+    const statusTxt=isBi?('● '+esc(line.sampleName||line.builtinKey)):hasCus?('● '+esc(line.sampleName||'загружен')):'○ нет образца';
+    const d=document.createElement('div'); d.className='ls';
+    d.innerHTML=`
+      <div class="sr">
+        <input type="text" value="${esc(line.name)}" data-a="name" data-id="${line.id}" style="flex:1;max-width:200px;">
+        <span class="${statusCls}">${statusTxt}</span>
+      </div>
+      <div class="sr">
+        <label>Образец</label>
+        ${BUILTIN_KEYS.map(k=>`<button class="btn bi ${line.builtinKey===k?'sel':''}" data-a="bi" data-id="${line.id}" data-key="${k}">${k}</button>`).join('')}
+        <span style="color:var(--muted);font-size:11px;">или</span>
+        <input type="file" accept="audio/*" data-a="upl" data-id="${line.id}" style="flex:1;font-size:12px;">
+        ${line.sampleURL?`<button class="btn" data-a="play" data-id="${line.id}">▶</button>`:''}
+      </div>
+      <div class="sr">
+        <label>Строгость</label>
+        <input type="range" min="0.3" max="0.95" step="0.01" value="${line.threshold}" data-a="thr" data-id="${line.id}">
+        <span data-tv="${line.id}" style="font-size:12px;color:var(--muted);min-width:34px;">${line.threshold}</span>
+      </div>`;
+    w.appendChild(d);
+  });
+
+  w.querySelectorAll('[data-a=name]').forEach(el=>el.addEventListener('change',e=>{
+    S.lines[+e.target.dataset.id].name=e.target.value.trim()||'Линия '+(+e.target.dataset.id+1);renderGrid();
+  }));
+  w.querySelectorAll('[data-a=bi]').forEach(el=>el.addEventListener('click',e=>{
+    const id=+e.target.dataset.id, key=e.target.dataset.key, line=S.lines[id];
+    line.builtinKey=key; line.sampleSource='builtin';
+    line.sampleName=BUILTIN[key].label;
+    line.threshold=BUILTIN[key].defaultThreshold;
+    line.profile=null; // builtin doesn't need cosine profile
+    saveState(); renderGrid(); renderLS();
+    toast('Назначен '+key+' на «'+line.name+'»');
+  }));
+  w.querySelectorAll('[data-a=thr]').forEach(el=>el.addEventListener('input',e=>{
+    const id=+e.target.dataset.id; S.lines[id].threshold=parseFloat(e.target.value);
+    w.querySelector(`[data-tv="${id}"]`).textContent=e.target.value;
+  }));
+  w.querySelectorAll('[data-a=upl]').forEach(el=>el.addEventListener('change',async e=>{
+    const id=+e.target.dataset.id, f=e.target.files[0]; if(!f) return;
+    const line=S.lines[id];
+    try{
+      await idbPut(id,f);
+      await buildCustomProfile(line,f);
+      line.sampleName=f.name; line.sampleSource='upload'; line.builtinKey=null;
+      if(line.sampleURL) URL.revokeObjectURL(line.sampleURL);
+      line.sampleURL=URL.createObjectURL(f);
+      saveState(); renderGrid(); renderLS();
+      toast(line.profile?'Образец «'+line.name+'» загружен':'⚠ Не удалось обработать файл',!line.profile);
+    }catch(err){toast('Ошибка: '+err.message,true);}
+  }));
+  w.querySelectorAll('[data-a=play]').forEach(el=>el.addEventListener('click',e=>{
+    new Audio(S.lines[+e.target.dataset.id].sampleURL).play()
+      .catch(err=>alert('Ошибка воспроизведения: '+err.message));
+  }));
+}
+
+async function populateDev(){
+  try{
+    const ds=await navigator.mediaDevices.enumerateDevices();
+    const sel=document.getElementById('devSel'); sel.innerHTML='';
+    ds.filter(d=>d.kind==='audioinput').forEach(d=>{
+      const o=document.createElement('option'); o.value=d.deviceId;
+      o.textContent=d.label||('Микрофон '+d.deviceId.slice(0,8));
+      if(d.deviceId===S.deviceId) o.selected=true;
+      sel.appendChild(o);
+    });
+  }catch(e){}
+}
+document.getElementById('btnDevR').onclick=populateDev;
+document.getElementById('devSel').onchange=e=>{S.deviceId=e.target.value;saveState();};
+
+/* ── INIT ── */
+async function init(){
+  pruneHist();
+  renderGrid();
+  setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString('ru-RU'),1000);
+  // Restore custom uploads from IDB
+  for(const l of S.lines){
+    if(l.sampleSource==='upload'){
+      try{
+        const b=await idbGet(l.id);
+        if(b){await buildCustomProfile(l,b); l.sampleURL=URL.createObjectURL(b);}
+      }catch(e){console.warn('IDB restore line',l.id,e);}
+    }
+  }
+  renderGrid();
+  document.getElementById('gTT').className='tt'+(gOn?' on':'');
+  document.getElementById('gLbl').textContent=gOn?'Мониторинг вкл':'Мониторинг выкл';
+  await startMon();
+  // Standalone mobile app — no server
+}
+init();
+
+</script>
+</body>
+</html>
